@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reprise course à pied</title>
+<meta name="theme-color" content="#0F4C5C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style id="app-style">
+:root{
+  --bg:#EDF2EF; --paper:#FFFFFF; --ink:#16302B; --muted:#5D716C; --line:#D3DDD9;
+  --walk:#A9B7B2; --easy:#2E8B83; --jog:#86C3BC; --tempo:#E2A31B; --fast:#C8372D;
+  --accent:#0F4C5C; --done:#2E8B83;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1A18; --paper:#162522; --ink:#E4EEEB; --muted:#93A8A3; --line:#28403B;
+    --walk:#5E706B; --easy:#3FB0A6; --jog:#2F6E68; --tempo:#F0B43A; --fast:#E5594E;
+    --accent:#7FC9D6; --done:#3FB0A6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1A18; --paper:#162522; --ink:#E4EEEB; --muted:#93A8A3; --line:#28403B;
+  --walk:#5E706B; --easy:#3FB0A6; --jog:#2F6E68; --tempo:#F0B43A; --fast:#E5594E;
+  --accent:#7FC9D6; --done:#3FB0A6;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Barlow,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:28px 18px 60px}
+h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-serif;margin:0;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:10px 0 22px;max-width:34em}
+.ticks{display:flex;gap:3px;margin:0 0 8px}
+.ticks span{flex:1;height:14px;border-radius:2px;background:var(--line)}
+.ticks span.on{background:var(--done)}
+.count{font:600 15px/1.3 Barlow,sans-serif;margin:0 0 4px}
+.status{font-size:13px;color:var(--muted);min-height:1.3em;margin:0 0 20px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:0 0 28px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.phase{margin:34px 0 10px}
+.phase h2{font:800 30px/1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0}
+.phase p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.week{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}
+.week-head{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;cursor:pointer}
+.week-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.wnum{font:800 26px/1 "Barlow Condensed",sans-serif;min-width:2.2ch}
+.wtitle{flex:1;font-weight:600}
+.wtitle small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.wprog{font-size:13px;color:var(--muted)}
+.week.complete .wnum{color:var(--done)}
+.chev{transition:transform .2s;color:var(--muted)}
+.week.open .chev{transform:rotate(90deg)}
+.sessions{display:none;border-top:1px solid var(--line)}
+.week.open .sessions{display:block}
+.session{display:flex;gap:12px;padding:14px 16px;border-top:1px solid var(--line)}
+.session:first-child{border-top:0}
+.check{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;color:transparent;margin-top:2px}
+.check:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.session.done .check{background:var(--done);border-color:var(--done);color:#fff}
+.sbody{flex:1;min-width:0}
+.stitle{font-weight:600;margin:0}
+.day{display:block;font:600 13px/1.2 Barlow,sans-serif;color:var(--accent);margin:0 0 2px}
+.opt{font-weight:400;color:var(--muted)}
+.session.muscu .check{border-style:dashed}
+.session.muscu.done .check{border-style:solid}
+.musclebar{height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--muted) 0 6px,transparent 6px 10px);opacity:.5}
+.session.done .stitle{color:var(--muted)}
+.sdetail{margin:2px 0 10px;font-size:14.5px;color:var(--muted)}
+.hint{margin:-4px 0 10px;font-size:13.5px;color:var(--accent)}
+.strip{display:flex;align-items:flex-end;height:30px;gap:1px}
+.strip span{display:block;border-radius:1px 1px 0 0;min-width:1px}
+.smeta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:5px}
+.vma{display:flex;gap:8px;align-items:center;margin:4px 0 12px;flex-wrap:wrap}
+.vma input{width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.vma button,.reset{padding:8px 14px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 14px Barlow,sans-serif;cursor:pointer}
+.rules{margin-top:40px;font-size:14.5px;color:var(--muted)}
+.rules h2{font:800 26px/1 "Barlow Condensed",sans-serif;color:var(--ink);margin:0 0 10px}
+.rules p{margin:0 0 8px}
+.reset{background:transparent;color:var(--muted);border:1px solid var(--line);margin-top:16px}
+@media (prefers-reduced-motion: reduce){.chev{transition:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="state-data">{"done":{},"vma":null}</script>
+<script id="main">
+(function(){
+var HEAD = '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Reprise course à pied</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"><style id="app-style">' + document.getElementById('app-style').textContent + '<\/style><\/head>';
+var LS_KEY = 'reprise-course-v1';
+
+var state;
+try { state = JSON.parse(document.getElementById('state-data').textContent); } catch(e){ state = {done:{},vma:null}; }
+if (!state.done) state.done = {};
+try {
+  var local = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+  if (local && local.done) state = local;
+} catch(e){}
+
+// ---------- Plan ----------
+var H = {walk:.3, jog:.45, easy:.55, tempo:.78, fast:1};
+function seg(t,m){ return [t,m]; }
+function reps(n,a,b){ var o=[]; for(var i=0;i<n;i++){ o.push(a); if(b && i<n-1) o.push(b); } return o; }
+function flat(){ var o=[]; for(var i=0;i<arguments.length;i++){ o=o.concat(arguments[i]); } return o; }
+function cw(n,run){ return flat([seg('walk',5)], reps(n,seg('easy',run),seg('walk',run===1?1.5:1))); }
+function fartlek(total,n){ var gap=(total-n*0.5)/(n+1); var o=[seg('easy',gap)]; for(var i=0;i<n;i++){ o.push(seg('tempo',.5)); o.push(seg('easy',gap)); } return o; }
+function strides(m){ return flat([seg('easy',m)], reps(4,seg('fast',.3),seg('walk',1))); }
+function vma(series,n,on,off){ var o=[seg('easy',15)]; for(var s=0;s<series;s++){ o=o.concat(reps(n,seg('fast',on),seg('jog',off))); if(s<series-1) o.push(seg('walk',3)); } o.push(seg('easy',10)); return o; }
+function seuil(n,m){ return flat([seg('easy',15)], reps(n,seg('tempo',m),seg('jog',2)), [seg('easy',10)]); }
+
+var PHASES = [
+ {name:'Phase 1 : réveil', note:'Course et marche alternées, 2 séances par semaine.', weeks:[
+  {t:'Démarrage', s:[
+   {n:'Course-marche', d:'5 min de marche, puis 8 × (1 min de course facile / 1 min 30 de marche).', g:cw(8,1)},
+   {n:'Course-marche', d:'Même séance. Tu dois finir en ayant l’impression de pouvoir continuer.', g:cw(8,1)}]},
+  {t:'On allonge', s:[
+   {n:'Course-marche', d:'5 min de marche, puis 6 × (2 min de course / 1 min de marche).', g:cw(6,2)},
+   {n:'Course-marche', d:'Même séance, toujours en aisance respiratoire.', g:cw(6,2)}]},
+  {t:'Blocs de 3 minutes', s:[
+   {n:'Course-marche', d:'5 min de marche, puis 5 × (3 min de course / 1 min de marche).', g:cw(5,3)},
+   {n:'Course-marche', d:'Même séance.', g:cw(5,3)}]},
+  {t:'Semaine allégée', s:[
+   {n:'Course-marche', d:'5 min de marche, puis 4 × (3 min / 1 min).', g:cw(4,3)},
+   {n:'Course-marche', d:'Même séance. On laisse le corps assimiler.', g:cw(4,3)}]}
+ ]},
+ {name:'Phase 2 : continuité', note:'3 séances par semaine, premières variations d’allure.', weeks:[
+  {t:'Courir en continu', s:[
+   {n:'Endurance', d:'20 min en continu, allure conversation.', g:[seg('easy',20)]},
+   {n:'Fartlek', d:'20 min faciles avec 6 accélérations de 30 s à allure soutenue, réparties librement.', g:fartlek(20,6), p:'tempo'},
+   {n:'Endurance et lignes droites', d:'20 min faciles, puis 4 lignes droites de 80 m en accélérant progressivement.', g:strides(20)}]},
+  {t:'On monte doucement', s:[
+   {n:'Endurance', d:'28 min en continu, allure conversation.', g:[seg('easy',28)]},
+   {n:'Fartlek', d:'22 min faciles avec 7 accélérations de 30 s à allure soutenue.', g:fartlek(22,7), p:'tempo'},
+   {n:'Endurance et lignes droites', d:'22 min faciles, puis 4 lignes droites.', g:strides(22)}]},
+  {t:'Plus haut volume de la phase', s:[
+   {n:'Endurance', d:'35 min en continu, allure conversation.', g:[seg('easy',35)]},
+   {n:'Fartlek', d:'25 min faciles avec 8 accélérations de 30 s à allure soutenue.', g:fartlek(25,8), p:'tempo'},
+   {n:'Endurance et lignes droites', d:'25 min faciles, puis 4 lignes droites.', g:strides(25)}]},
+  {t:'Semaine allégée et test', s:[
+   {n:'Endurance', d:'25 min faciles.', g:[seg('easy',25)]},
+   {n:'Test VMA', d:'15 min d’échauffement, puis 6 min à fond en régulant pour tenir jusqu’au bout, puis 10 min de retour au calme. Distance parcourue en mètres ÷ 100 = ta VMA en km/h.', g:[seg('easy',15),seg('fast',6),seg('easy',10)], test:true},
+   {n:'Endurance', d:'25 min faciles.', g:[seg('easy',25)]}]}
+ ]},
+ {name:'Phase 3 : variété', note:'Une séance VMA, une séance seuil et une sortie longue chaque semaine.', weeks:[
+  {t:'Première semaine complète', s:[
+   {n:'VMA courte', d:'15 min d’échauffement, 2 × 6 × (30 s rapide / 30 s trot), 3 min de récup entre les séries, 10 min de retour au calme.', g:vma(2,6,.5,.5), p:'fast'},
+   {n:'Seuil', d:'15 min d’échauffement, 3 × 5 min soutenu avec 2 min de trot, 10 min de retour au calme.', g:seuil(3,5), p:'tempo'},
+   {n:'Sortie longue', d:'40 min entièrement en facile.', g:[seg('easy',40)], p:'easy'}]},
+  {t:'Plus de répétitions', s:[
+   {n:'VMA courte', d:'15 min d’échauffement, 2 × 8 × (30 s / 30 s), 3 min entre les séries, 10 min de retour au calme.', g:vma(2,8,.5,.5), p:'fast'},
+   {n:'Seuil', d:'15 min d’échauffement, 3 × 7 min soutenu avec 2 min de trot, 10 min de retour au calme.', g:seuil(3,7), p:'tempo'},
+   {n:'Sortie longue', d:'45 min en facile.', g:[seg('easy',45)], p:'easy'}]},
+  {t:'Efforts plus longs', s:[
+   {n:'VMA', d:'15 min d’échauffement, 2 × 6 × (45 s rapide / 30 s trot), 3 min entre les séries, 10 min de retour au calme.', g:vma(2,6,.75,.5), p:'fast'},
+   {n:'Seuil', d:'15 min d’échauffement, 2 × 10 min soutenu avec 2 min de trot, 10 min de retour au calme.', g:seuil(2,10), p:'tempo'},
+   {n:'Sortie longue', d:'50 min en facile.', g:[seg('easy',50)], p:'easy'}]},
+  {t:'Semaine allégée', s:[
+   {n:'VMA légère', d:'15 min d’échauffement, 1 × 8 × (30 s / 30 s), 10 min de retour au calme.', g:vma(1,8,.5,.5), p:'fast'},
+   {n:'Endurance', d:'30 min faciles.', g:[seg('easy',30)], p:'easy'},
+   {n:'Séance plaisir', d:'35 min, le parcours et l’allure que tu veux. Tu as fini le programme.', g:[seg('easy',35)]}]}
+ ]}
+];
+
+var MUSCU = [
+ {d:'25 min au poids du corps, 3 tours : 12 squats, 8 fentes par jambe, 15 montées sur pointes de pieds, 10 ponts fessiers, 30 s de planche, 20 s de gainage latéral de chaque côté.', m:25},
+ {d:'30 à 40 min, charges modérées : squat ou presse, fentes, mollets, soulevé de terre jambes tendues léger, gainage. 3 séries de 10 à 12, en gardant 2 ou 3 répétitions en réserve.', m:35},
+ {d:'40 min : même base jambes et gainage, un peu plus chargée, plus le haut du corps (tirage, pompes ou développé). Ne va pas jusqu’à l’épuisement des jambes, la VMA tombe lundi.', m:40}
+];
+var LIGHT = 'Version allégée : moitié des séries, sans chercher à charger.';
+var DAYS2=['Lundi','Vendredi'], DAYS3=['Lundi','Mercredi','Vendredi'];
+var ALL=[]; var wk=0;
+PHASES.forEach(function(ph,pi){ ph.weeks.forEach(function(w){ wk++; w.num=wk; var days=w.s.length===2?DAYS2:DAYS3; w.s.forEach(function(s,i){ s.id='s'+wk+'-'+(i+1); s.day=days[i]; ALL.push(s); }); var light=/allégée/i.test(w.t); w.m={id:'m'+wk, day:'Samedi', n:'Musculation', d:light?MUSCU[pi].d+' '+LIGHT:MUSCU[pi].d, mm:light?Math.round(MUSCU[pi].m*.6):MUSCU[pi].m, muscu:true}; }); });
+
+// ---------- Helpers ----------
+function esc(t){ return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function mins(g){ return g.reduce(function(a,s){return a+s[1];},0); }
+function fmtMin(m){ return Math.round(m)+' min'; }
+function pace(kmh){ var s=Math.round(3600/kmh); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'/km'; }
+function hint(s){
+  if(!state.vma || !s.p) return '';
+  var v=state.vma;
+  if(s.p==='fast') return 'Allure rapide : '+v.toFixed(1)+' km/h, soit environ '+Math.round(v/3.6*30/5)*5+' m en 30 s.';
+  if(s.p==='tempo') return 'Allure soutenue : environ '+pace(v*.85)+'.';
+  if(s.p==='easy') return 'Allure facile : entre '+pace(v*.70)+' et '+pace(v*.62)+'.';
+  return '';
+}
+function strip(g){
+  var tot=mins(g);
+  return g.map(function(s){ return '<span style="flex:'+(s[1]/tot)+' 0 0;height:'+(H[s[0]]*100)+'%;background:var(--'+s[0]+')"></span>'; }).join('');
+}
+function currentWeek(){
+  var w=null; PHASES.forEach(function(ph){ ph.weeks.forEach(function(x){ if(!w && x.s.some(function(s){return !state.done[s.id];})) w=x.num; }); });
+  return w;
+}
+
+// ---------- View state ----------
+var open = {};
+try { var ss=JSON.parse(sessionStorage.getItem(LS_KEY+'-view')||'null'); if(ss){ open=ss.open||{}; setTimeout(function(){ window.scrollTo(0, ss.y||0); }, 60); } } catch(e){}
+if(!Object.keys(open).length){ var c=currentWeek(); if(c) open[c]=true; }
+
+// ---------- Render ----------
+var statusText='';
+function render(){
+  var doneCount=ALL.filter(function(s){return state.done[s.id];}).length;
+  var h='<div class="wrap"><h1>Reprise</h1>';
+  h+='<p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1), musculation facultative le samedi.</p>';
+  h+='<div class="ticks" aria-hidden="true">'+ALL.map(function(s){return '<span class="'+(state.done[s.id]?'on':'')+'"></span>';}).join('')+'</div>';
+  var mCount=0; PHASES.forEach(function(ph){ ph.weeks.forEach(function(w){ if(state.done[w.m.id]) mCount++; }); });
+  h+='<p class="count">'+doneCount+' séance'+(doneCount>1?'s':'')+' de course faite'+(doneCount>1?'s':'')+' sur '+ALL.length+(mCount?', '+mCount+' de musculation':'')+'</p>';
+  h+='<p class="status" role="status">'+esc(statusText)+'</p>';
+  h+='<div class="legend"><span><i style="background:var(--walk)"></i>Marche</span><span><i style="background:var(--jog)"></i>Trot de récup</span><span><i style="background:var(--easy)"></i>Facile</span><span><i style="background:var(--tempo)"></i>Soutenu</span><span><i style="background:var(--fast)"></i>Rapide</span></div>';
+  PHASES.forEach(function(ph){
+    h+='<section class="phase"><h2>'+esc(ph.name)+'</h2><p>'+esc(ph.note)+'</p></section>';
+    ph.weeks.forEach(function(w){
+      var nd=w.s.filter(function(s){return state.done[s.id];}).length;
+      var cls='week'+(open[w.num]?' open':'')+(nd===w.s.length?' complete':'');
+      h+='<div class="'+cls+'"><button class="week-head" data-week="'+w.num+'" aria-expanded="'+(!!open[w.num])+'"><span class="wnum">'+w.num+'</span><span class="wtitle">Semaine '+w.num+'<small>'+esc(w.t)+'</small></span><span class="wprog">'+nd+'/'+w.s.length+'</span><span class="chev" aria-hidden="true">›</span></button><div class="sessions">';
+      w.s.forEach(function(s){
+        var d=state.done[s.id];
+        h+='<div class="session'+(d?' done':'')+'"><button class="check" data-id="'+s.id+'" aria-pressed="'+(!!d)+'" aria-label="'+(d?'Marquer comme non faite':'Marquer comme faite')+' : '+esc(s.n)+'">✓</button><div class="sbody"><span class="day">'+s.day+'</span><p class="stitle">'+esc(s.n)+'</p><p class="sdetail">'+esc(s.d)+'</p>';
+        var hi=hint(s); if(hi) h+='<p class="hint">'+esc(hi)+'</p>';
+        if(s.test) h+='<div class="vma"><label for="vma-in">Ta VMA (km/h)</label><input id="vma-in" type="number" inputmode="decimal" step="0.1" min="6" max="25" value="'+(state.vma||'')+'"><button id="vma-save">Enregistrer</button></div>';
+        h+='<div class="strip" aria-hidden="true">'+strip(s.g)+'</div><div class="smeta"><span>'+fmtMin(mins(s.g))+'</span><span>'+(d?'Faite le '+new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'')+'</span></div></div></div>';
+      });
+      var m=w.m, md=state.done[m.id];
+      h+='<div class="session muscu'+(md?' done':'')+'"><button class="check" data-id="'+m.id+'" aria-pressed="'+(!!md)+'" aria-label="'+(md?'Marquer comme non faite':'Marquer comme faite')+' : musculation">✓</button><div class="sbody"><span class="day">Samedi</span><p class="stitle">Musculation <span class="opt">(facultatif)</span></p><p class="sdetail">'+esc(m.d)+'</p><div class="musclebar" aria-hidden="true"></div><div class="smeta"><span>'+m.mm+' min</span><span>'+(md?'Faite le '+new Date(md).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'')+'</span></div></div></div>';
+      h+='</div></div>';
+    });
+  });
+  h+='<section class="rules"><h2>Pour ne pas te blesser</h2>';
+  h+='<p>Le mardi, le jeudi et le dimanche sont des jours de repos. Si tu dois décaler une séance, garde au moins un jour sans course entre deux séances, et jamais deux séances intenses à la suite.</p><p>Si tes jambes sont encore lourdes le lundi après la musculation du samedi, allège la séance du lundi plutôt que de forcer.</p>';
+  h+='<p>Garde environ 80 % de ton temps de course en facile.</p>';
+  h+='<p>Une gêne qui dure plus de 48 h ou qui s’aggrave en courant : lève le pied ou refais la semaine. Surveille surtout les tendons d’Achille et les tibias.</p>';
+  h+='<p>Si une semaine paraît trop dure, refais-la avant de passer à la suivante.</p>';
+  h+='<p>Par forte chaleur, cours tôt le matin ou en fin de journée.</p>';
+  h+='<button class="reset" id="reset">Remettre le programme à zéro</button></section></div>';
+  document.getElementById('app').innerHTML=h;
+}
+
+// ---------- Save ----------
+var armed=false, artifactNs=null, canPublish=false, timer=null;
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function buildDoc(){
+  return '<!doctype html>\n<html lang="fr">'+HEAD+'<body><div id="app"></div><script type="application/json" id="state-data">'+JSON.stringify(state).replace(/</g,'\\u003c')+'<\/script><script id="main">'+document.getElementById('main').textContent+'<\/script><\/body><\/html>';
+}
+function schedule(){
+  saveLocal();
+  if(!canPublish){ statusText=''; render(); return; }
+  statusText='Enregistrement…'; render();
+  clearTimeout(timer);
+  timer=setTimeout(function(){
+    try{ sessionStorage.setItem(LS_KEY+'-view', JSON.stringify({open:open,y:window.scrollY})); }catch(e){}
+    artifactNs.publish(buildDoc()).catch(function(err){
+      var c=err&&err.code;
+      if(c==='conflict') return;
+      if(c==='not_writer'||c==='not_granted'||c==='not_declared'||c==='consent_required'||c==='capability_disabled'||c==='capability_removed'){ canPublish=false; statusText='Progression enregistrée sur cet appareil.'; }
+      else if(c==='rate_limited'){ statusText='Trop de changements d’un coup, réessaie dans un instant.'; }
+      else { statusText='Enregistrement impossible pour le moment. La progression reste sur cet appareil.'; }
+      render();
+    });
+  }, 1500);
+}
+
+document.addEventListener('click', function(e){
+  var wb=e.target.closest('.week-head');
+  if(wb){ var n=wb.getAttribute('data-week'); open[n]=!open[n]; render(); return; }
+  var cb=e.target.closest('.check');
+  if(cb){ var id=cb.getAttribute('data-id'); if(state.done[id]) delete state.done[id]; else state.done[id]=new Date().toISOString().slice(0,10); schedule(); return; }
+  if(e.target.id==='vma-save'){ var v=parseFloat(String(document.getElementById('vma-in').value).replace(',','.')); if(v>=6&&v<=25){ state.vma=Math.round(v*10)/10; schedule(); } else { statusText='Entre une VMA entre 6 et 25 km/h.'; render(); } return; }
+  if(e.target.id==='reset'){ if(!armed){ armed=true; e.target.textContent='Appuie encore pour tout effacer'; setTimeout(function(){ armed=false; var b=document.getElementById('reset'); if(b) b.textContent='Remettre le programme à zéro'; },4000); return; } armed=false; state={done:{},vma:null}; open={}; var c=currentWeek(); if(c) open[c]=true; schedule(); }
+});
+
+render();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+})();
+</script>
+</body>
+</html>
