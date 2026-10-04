@@ -28,6 +28,7 @@ jobs:
           P=android/app/src/main
           mkdir -p $P/java/com/goldolero/reprise $P/assets $P/res/mipmap-xxxhdpi
           cp index.html $P/assets/index.html
+          sed -i -e 's#<link[^>]*fonts\.g[a-z]*\.com[^>]*>##g' -e 's#"Barlow Condensed",#"Barlow Condensed","sans-serif-condensed",#g' $P/assets/index.html
           cp icon-192.png $P/res/mipmap-xxxhdpi/ic_launcher.png
 
           cat > android/settings.gradle <<'EOF'
@@ -66,9 +67,8 @@ jobs:
 
           cat > $P/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET" />
             <application
-              android:label="Reprise"
+              android:label="Programme course"
               android:icon="@mipmap/ic_launcher"
               android:theme="@android:style/Theme.Material.NoActionBar">
               <activity
