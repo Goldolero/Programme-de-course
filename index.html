@@ -89,6 +89,12 @@ h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-ser
 .rules{margin-top:40px;font-size:14.5px;color:var(--muted)}
 .rules h2{font:800 26px/1 "Barlow Condensed",sans-serif;color:var(--ink);margin:0 0 10px}
 .rules p{margin:0 0 8px}
+.backup{margin-top:34px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:var(--muted);font-size:14px}
+.backup h2{font:800 24px/1 "Barlow Condensed","sans-serif-condensed",sans-serif;color:var(--ink);margin:0 0 6px}
+.backup p{margin:0 0 10px}
+.backup textarea{width:100%;min-height:72px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px/1.4 ui-monospace,monospace;resize:vertical;margin:0 0 8px}
+.backup .row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.backup button{padding:8px 14px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 14px Barlow,sans-serif;cursor:pointer}
 .reset{background:transparent;color:var(--muted);border:1px solid var(--line);margin-top:16px}
 @media (prefers-reduced-motion: reduce){.chev{transition:none}}
 </style>
@@ -256,7 +262,10 @@ function render(){
   h+='<p>Une gêne qui dure plus de 48 h ou qui s’aggrave en courant : lève le pied ou refais la semaine. Surveille surtout les tendons d’Achille et les tibias.</p>';
   h+='<p>Si une semaine paraît trop dure, refais-la avant de passer à la suivante.</p>';
   h+='<p>Par forte chaleur, cours tôt le matin ou en fin de journée.</p>';
-  h+='<button class="reset" id="reset">Remettre le programme à zéro</button></section></div>';
+  h+='<button class="reset" id="reset">Remettre le programme à zéro</button></section>';
+  h+='<section class="backup"><h2>Sauvegarde</h2><p>Avant une mise à jour de l’appli, copie ce code et garde-le (dans tes notes, par exemple). Après la mise à jour, colle-le dans le cadre du dessous et appuie sur Restaurer.</p>';
+  h+='<textarea id="bk-out" readonly aria-label="Code de sauvegarde">'+esc(JSON.stringify(state))+'</textarea><div class="row"><button id="bk-copy">Copier le code</button></div>';
+  h+='<textarea id="bk-in" placeholder="Colle ici ton code de sauvegarde" aria-label="Code à restaurer"></textarea><div class="row"><button id="bk-load">Restaurer</button></div></section></div>';
   document.getElementById('app').innerHTML=h;
 }
 
@@ -289,6 +298,8 @@ document.addEventListener('click', function(e){
   if(wb){ var n=wb.getAttribute('data-week'); open[n]=!open[n]; render(); return; }
   var cb=e.target.closest('.check');
   if(cb){ var id=cb.getAttribute('data-id'); if(state.done[id]) delete state.done[id]; else state.done[id]=new Date().toISOString().slice(0,10); schedule(); return; }
+  if(e.target.id==='bk-copy'){ var ta=document.getElementById('bk-out'); var txt=ta.value; function ok(){ statusText='Code copié. Colle-le dans tes notes pour le garder.'; render(); } function manual(){ ta.focus(); ta.select(); try{ if(document.execCommand('copy')) { ok(); return; } }catch(x){} statusText='Copie automatique impossible : le code est sélectionné, copie-le avec un appui long.'; var st=document.querySelector('.status'); if(st) st.textContent=statusText; } try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(ok,manual); } else manual(); }catch(x){ manual(); } return; }
+  if(e.target.id==='bk-load'){ var raw=String(document.getElementById('bk-in').value||'').trim(); var data=null; try{ data=JSON.parse(raw); }catch(x){} if(!data||typeof data!=='object'||!data.done||typeof data.done!=='object'){ statusText='Code invalide : vérifie que tu l’as copié en entier.'; render(); window.scrollTo(0,0); return; } state={done:data.done,vma:typeof data.vma==='number'?data.vma:null,start:typeof data.start==='string'?data.start:undefined}; if(!state.start) delete state.start; open={}; var c2=weekOfToday()||currentWeek(); if(c2) open[c2]=true; schedule(); statusText='Progression restaurée.'; render(); window.scrollTo(0,0); return; }
   if(e.target.id==='start-save'){ var d=parseD(document.getElementById('start-in').value); if(!d){ statusText='Choisis une date.'; render(); return; } var dow=d.getDay(); if(dow!==1){ d=addD(d,(8-dow)%7); statusText='Le programme commence un lundi : début fixé au lundi '+fmtL(d)+'.'; } else statusText=''; state.start=isoD(d); open={}; var c=weekOfToday()||currentWeek(); if(c) open[c]=true; var msg=statusText; schedule(); statusText=msg; render(); return; }
   if(e.target.id==='vma-save'){ var v=parseFloat(String(document.getElementById('vma-in').value).replace(',','.')); if(v>=6&&v<=25){ state.vma=Math.round(v*10)/10; schedule(); } else { statusText='Entre une VMA entre 6 et 25 km/h.'; render(); } return; }
   if(e.target.id==='reset'){ if(!armed){ armed=true; e.target.textContent='Appuie encore pour tout effacer'; setTimeout(function(){ armed=false; var b=document.getElementById('reset'); if(b) b.textContent='Remettre le programme à zéro'; },4000); return; } armed=false; state={done:{},vma:null}; open={}; var c=currentWeek(); if(c) open[c]=true; schedule(); }
