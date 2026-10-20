@@ -37,10 +37,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Barlow,"Se
 body.lock{overflow:hidden}
 button{font-family:inherit}
 .wrap{max-width:640px;margin:0 auto;padding:16px 18px 60px}
-.tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;background:var(--bg);padding:8px 0 12px;margin:0 0 14px;border-bottom:1px solid var(--line)}
-.tabs button{flex:1;padding:10px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--muted);font:600 15px/1.2 Barlow,sans-serif;cursor:pointer}
-.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
-.tabs button:focus-visible,.sidetab:focus-visible,.drawer button:focus-visible,.cycnav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;background:var(--bg);padding:10px 0;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.menubtn{width:44px;height:44px;flex:none;display:grid;place-content:center;gap:5px;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer}
+.menubtn span{display:block;width:20px;height:2px;border-radius:1px;background:var(--ink)}
+.brand{display:flex;align-items:center;gap:8px;min-width:0;color:var(--ink)}
+.brand svg{flex:none;width:30px;height:30px;color:var(--accent)}
+.brand b{font:800 22px/1 "Barlow Condensed","Arial Narrow",sans-serif;white-space:nowrap}
+.brand small{display:block;font:500 13px/1.2 Barlow,sans-serif;color:var(--muted)}
+.menubtn:focus-visible,.menu button:focus-visible,.cycnav button:focus-visible,.page button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-serif;margin:0;letter-spacing:-.01em}
 .lede{color:var(--muted);margin:10px 0 22px;max-width:34em}
 .ticks{display:flex;gap:3px;margin:0 0 8px}
@@ -92,7 +96,7 @@ h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-ser
 .start{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 22px}
 .start label{font-weight:600;flex:1 1 100%}
 .start input{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;color-scheme:light dark}
-.start button,.vma button,.drawer .primary{padding:8px 14px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 14px Barlow,sans-serif;cursor:pointer}
+.start button,.vma button{padding:8px 14px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 14px Barlow,sans-serif;cursor:pointer}
 .start p{margin:0;flex:1 1 100%;font-size:13.5px;color:var(--muted)}
 .today{box-shadow:inset 3px 0 0 var(--tempo)}
 .vma{display:flex;gap:8px;align-items:center;margin:4px 0 12px;flex-wrap:wrap}
@@ -100,17 +104,21 @@ h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-ser
 .rules{margin-top:40px;font-size:14.5px;color:var(--muted)}
 .rules h2{font:800 26px/1 "Barlow Condensed",sans-serif;color:var(--ink);margin:0 0 10px}
 .rules p{margin:0 0 8px}
-.sidetab{position:fixed;right:0;top:62%;z-index:6;transform:translateY(-50%);writing-mode:vertical-rl;padding:14px 7px;border:1px solid var(--line);border-right:0;border-radius:8px 0 0 8px;background:var(--paper);color:var(--ink);font:600 13px/1 Barlow,sans-serif;letter-spacing:.02em;cursor:pointer;box-shadow:-2px 0 8px rgba(0,0,0,.08)}
 .scrim{position:fixed;inset:0;z-index:7;background:var(--scrim)}
-.drawer{position:fixed;top:0;right:0;bottom:0;z-index:8;width:min(380px,90vw);background:var(--paper);border-left:1px solid var(--line);padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto;color:var(--muted);font-size:14px}
-.drawer h2{font:800 28px/1 "Barlow Condensed","Arial Narrow",sans-serif;color:var(--ink);margin:0}
-.drawer h3{font:600 15px/1.3 Barlow,sans-serif;color:var(--ink);margin:22px 0 6px}
-.drawer p{margin:0 0 10px}
-.drawer .top{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px}
-.drawer .close{width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font:400 22px/1 Barlow,sans-serif;cursor:pointer}
-.drawer textarea{width:100%;min-height:84px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px/1.4 ui-monospace,monospace;resize:vertical;margin:0 0 8px}
-.drawer .status{margin:0 0 10px;color:var(--accent)}
-.drawer .reset{padding:8px 14px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);font:600 14px Barlow,sans-serif;cursor:pointer}
+.menu{position:fixed;top:0;left:0;bottom:0;z-index:8;width:min(320px,84vw);background:var(--paper);border-right:1px solid var(--line);padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.menu .top{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}
+.menu .close{width:44px;height:44px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font:400 24px/1 Barlow,sans-serif;cursor:pointer}
+.menu h2{font:600 13px/1.2 Barlow,sans-serif;color:var(--muted);margin:18px 6px 6px}
+.menu ul{list-style:none;margin:0;padding:0}
+.menu li button{display:block;width:100%;text-align:left;padding:12px 12px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:600 17px/1.2 Barlow,sans-serif;cursor:pointer}
+.menu li button small{display:block;font:400 13px/1.3 Barlow,sans-serif;color:var(--muted);margin-top:2px}
+.menu li button[aria-current="page"]{background:var(--bg);box-shadow:inset 3px 0 0 var(--accent)}
+.page p{color:var(--muted);margin:0 0 12px}
+.page h2{font:600 16px/1.3 Barlow,sans-serif;color:var(--ink);margin:26px 0 6px}
+.page textarea{width:100%;min-height:96px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:13px/1.4 ui-monospace,monospace;resize:vertical;margin:0 0 8px}
+.page .primary{padding:10px 16px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 15px Barlow,sans-serif;cursor:pointer}
+.page .danger{padding:10px 16px;border:1px solid var(--fast);border-radius:6px;background:transparent;color:var(--fast);font:600 15px Barlow,sans-serif;cursor:pointer}
+.page .danger.armed{background:var(--fast);color:#fff}
 @media (prefers-reduced-motion: reduce){.chev{transition:none}}
 </style>
 </head>
@@ -321,7 +329,9 @@ if(tab!=='r' && tab!=='c'){
 }
 var viewCycle = cycleOfToday();
 var open = {};
-var drawerOpen=false, statusText='', drawerStatus='', bkDraft='', armed=false;
+var view=tab, menuOpen=false, statusText='', bkDraft='', armed=false;
+var RUNNER='<svg viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="61" cy="16" r="10" fill="currentColor" stroke="none"/><path d="M56 32 L45 57"/><path d="M54 37 L66 46 L76 38"/><path d="M54 37 L41 43 L32 54"/><path d="M45 57 L61 66 L56 85"/><path d="M45 57 L37 73 L21 75"/></svg>';
+var NAMES={r:'Reprise',c:'Continuité',save:'Sauvegarde',reset:'Remise à zéro'};
 
 function okey(P,cy,w){ return P.key==='r' ? 'r'+w : 'c'+cy+'-'+w; }
 function ensureOpen(P,cy){
@@ -386,10 +396,10 @@ function progressHtml(P,cy){
   return h;
 }
 
-function render(){
+function programView(){
   var P=PROG[tab], cy=tab==='c'?viewCycle:1;
   ensureOpen(P,cy);
-  var h='<div class="wrap"><nav class="tabs" aria-label="Programmes"><button data-tab="r" aria-pressed="'+(tab==='r')+'">Reprise</button><button data-tab="c" aria-pressed="'+(tab==='c')+'">Continuité</button></nav>';
+  var h='';
   if(tab==='r'){
     var st=startR();
     h+='<h1>Reprise</h1><p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1), musculation facultative le samedi.</p>';
@@ -410,42 +420,56 @@ function render(){
   h+='<p>Garde environ 80 % de ton temps de course en facile.</p>';
   h+='<p>Une gêne qui dure plus de 48 h ou qui s’aggrave en courant : lève le pied ou refais la semaine. Surveille surtout les tendons d’Achille et les tibias.</p>';
   h+='<p>Si une semaine paraît trop dure, refais-la avant de passer à la suivante.</p>';
-  h+='<p>Par forte chaleur, cours tôt le matin ou en fin de journée.</p></section></div>';
+  h+='<p>Par forte chaleur, cours tôt le matin ou en fin de journée.</p></section>';
 
-  h+='<button class="sidetab" id="side-open" aria-controls="drawer" aria-expanded="'+drawerOpen+'">Sauvegarde</button>';
-  if(drawerOpen){
-    h+='<div class="scrim" id="scrim"></div><aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">';
-    h+='<div class="top"><h2 id="drawer-title">Sauvegarde</h2><button class="close" id="side-close" aria-label="Fermer">×</button></div>';
-    h+='<p class="status" role="status">'+esc(drawerStatus)+'</p>';
-    h+='<p>Ce code contient tes deux programmes : séances cochées, VMA et dates. Copie-le de temps en temps et garde-le dans tes notes.</p>';
-    h+='<textarea id="bk-out" readonly aria-label="Code de sauvegarde">'+esc(JSON.stringify(state))+'</textarea><button class="primary" id="bk-copy">Copier le code</button>';
-    h+='<h3>Restaurer</h3><p>Après un changement de téléphone ou une réinstallation, colle ton code ici.</p>';
-    h+='<textarea id="bk-in" placeholder="Colle ici ton code de sauvegarde" aria-label="Code à restaurer">'+esc(bkDraft)+'</textarea><button class="primary" id="bk-load">Restaurer</button>';
-    h+='<h3>Tout effacer</h3><p>Efface les séances cochées des deux programmes, ta VMA et tes dates.</p><button class="reset" id="reset">'+(armed?'Appuie encore pour tout effacer':'Remettre à zéro')+'</button>';
-    h+='</aside>';
+  return h;
+}
+function saveView(){
+  var h='<div class="page"><h1>Sauvegarde</h1><p class="lede">Ce code contient tes deux programmes : séances cochées, VMA et dates. Copie-le de temps en temps et garde-le dans tes notes.</p>';
+  h+='<p class="status" role="status">'+esc(statusText)+'</p>';
+  h+='<textarea id="bk-out" readonly aria-label="Code de sauvegarde">'+esc(JSON.stringify(state))+'</textarea><button class="primary" id="bk-copy">Copier le code</button>';
+  h+='<h2>Restaurer</h2><p>Après un changement de téléphone ou une réinstallation, colle ton code ici.</p>';
+  h+='<textarea id="bk-in" placeholder="Colle ici ton code de sauvegarde" aria-label="Code à restaurer">'+esc(bkDraft)+'</textarea><button class="primary" id="bk-load">Restaurer</button></div>';
+  return h;
+}
+function resetView(){
+  var h='<div class="page"><h1>Remise à zéro</h1><p class="lede">Efface les séances cochées des deux programmes, ta VMA et tes dates. Pense à copier ton code de sauvegarde avant, si tu veux pouvoir revenir en arrière.</p>';
+  h+='<p class="status" role="status">'+esc(statusText)+'</p>';
+  h+='<button class="danger'+(armed?' armed':'')+'" id="reset">'+(armed?'Appuie encore pour tout effacer':'Tout effacer')+'</button></div>';
+  return h;
+}
+function menuItem(v,label,sub){ return '<li><button data-view="'+v+'"'+(view===v?' aria-current="page"':'')+'>'+label+(sub?'<small>'+sub+'</small>':'')+'</button></li>'; }
+function render(){
+  var h='<div class="wrap"><header class="bar"><button class="menubtn" id="menu-open" aria-label="Ouvrir le menu" aria-expanded="'+menuOpen+'" aria-controls="menu"><span></span><span></span><span></span></button><div class="brand">'+RUNNER+'<div><b>Programme course</b><small>'+NAMES[view]+'</small></div></div></header>';
+  h+= view==='save' ? saveView() : view==='reset' ? resetView() : programView();
+  h+='</div>';
+  if(menuOpen){
+    h+='<div class="scrim" id="scrim"></div><nav class="menu" id="menu" aria-label="Menu"><div class="top"><div class="brand">'+RUNNER+'<b>Menu</b></div><button class="close" id="menu-close" aria-label="Fermer le menu">×</button></div>';
+    h+='<h2>Programme</h2><ul>'+menuItem('r','Reprise','12 semaines pour revenir à la course')+menuItem('c','Continuité','Cycles de 12 semaines, sans fin')+'</ul>';
+    h+='<h2>Options</h2><ul>'+menuItem('save','Sauvegarde','Copier ou restaurer ta progression')+menuItem('reset','Remise à zéro','Tout effacer')+'</ul></nav>';
   }
   document.getElementById('app').innerHTML=h;
-  document.body.classList.toggle('lock', drawerOpen);
+  document.body.classList.toggle('lock', menuOpen);
 }
 
 function save(){ lsSet(LS_KEY, JSON.stringify(state)); }
-function setDrawer(v){ drawerOpen=v; drawerStatus=''; armed=false; render(); var el=document.getElementById(v?'side-close':'side-open'); if(el) el.focus(); }
+function setMenu(v){ menuOpen=v; render(); var el=document.getElementById(v?'menu-close':'menu-open'); if(el) el.focus(); }
 
 // ---------- Actions ----------
 document.addEventListener('input', function(e){ if(e.target.id==='bk-in') bkDraft=e.target.value; });
-document.addEventListener('keydown', function(e){ if(e.key==='Escape' && drawerOpen) setDrawer(false); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape' && menuOpen) setMenu(false); });
 document.addEventListener('click', function(e){
   var t=e.target, id=t.id;
-  var tb=t.closest('[data-tab]');
-  if(tb){ tab=tb.getAttribute('data-tab'); lsSet(LS_KEY+'-tab',tab); statusText=''; render(); window.scrollTo(0,0); return; }
+  var vb=t.closest('[data-view]');
+  if(vb){ view=vb.getAttribute('data-view'); if(view==='r'||view==='c'){ tab=view; lsSet(LS_KEY+'-tab',tab); } statusText=''; armed=false; menuOpen=false; render(); window.scrollTo(0,0); var mb=document.getElementById('menu-open'); if(mb) mb.focus(); return; }
+  if(t.closest('#menu-open')){ setMenu(true); return; }
+  if(t.closest('#menu-close') || id==='scrim'){ setMenu(false); return; }
   var wb=t.closest('.week-head');
   if(wb){ var k=wb.getAttribute('data-week'); open[k]=!open[k]; render(); return; }
   var cb=t.closest('.check');
   if(cb){ var sid=cb.getAttribute('data-id'); if(state.done[sid]) delete state.done[sid]; else state.done[sid]=isoD(new Date()); save(); statusText=''; render(); return; }
   if(id==='cyc-prev' && viewCycle>1){ viewCycle--; render(); return; }
   if(id==='cyc-next' && viewCycle<cycleOfToday()+1){ viewCycle++; render(); return; }
-  if(id==='side-open'){ setDrawer(true); return; }
-  if(id==='side-close' || id==='scrim'){ setDrawer(false); return; }
   if(id==='start-save'){
     var which=t.getAttribute('data-which'), inp=document.getElementById(which==='start2'?'start2-in':'start-in');
     var d=parseD(inp&&inp.value);
@@ -459,22 +483,22 @@ document.addEventListener('click', function(e){
   if(id==='vma-save'){ var v=parseFloat(String(document.getElementById('vma-in').value).replace(',','.')); if(v>=6&&v<=25){ state.vma=Math.round(v*10)/10; save(); statusText='VMA enregistrée : '+state.vma.toFixed(1)+' km/h. Les allures sont mises à jour.'; } else statusText='Entre une VMA entre 6 et 25 km/h.'; render(); return; }
   if(id==='bk-copy'){
     var ta=document.getElementById('bk-out'), txt=ta.value;
-    var ok=function(){ drawerStatus='Code copié. Colle-le dans tes notes pour le garder.'; render(); };
-    var manual=function(){ ta.focus(); ta.select(); try{ if(document.execCommand('copy')){ ok(); return; } }catch(x){} drawerStatus='Copie automatique impossible : le code est sélectionné, copie-le avec un appui long.'; var s=document.querySelector('.drawer .status'); if(s) s.textContent=drawerStatus; };
+    var ok=function(){ statusText='Code copié. Colle-le dans tes notes pour le garder.'; render(); };
+    var manual=function(){ ta.focus(); ta.select(); try{ if(document.execCommand('copy')){ ok(); return; } }catch(x){} statusText='Copie automatique impossible : le code est sélectionné, copie-le avec un appui long.'; var s=document.querySelector('.page .status'); if(s) s.textContent=statusText; };
     try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok,manual); else manual(); }catch(x){ manual(); }
     return;
   }
   if(id==='bk-load'){
     var data=null; try{ data=JSON.parse(String(bkDraft||'').trim()); }catch(x){}
-    if(!data || typeof data!=='object' || !data.done || typeof data.done!=='object'){ drawerStatus='Code invalide : vérifie que tu l’as copié en entier.'; render(); return; }
+    if(!data || typeof data!=='object' || !data.done || typeof data.done!=='object'){ statusText='Code invalide : vérifie que tu l’as copié en entier.'; render(); return; }
     state={done:data.done, vma:typeof data.vma==='number'?data.vma:null};
     if(typeof data.start==='string') state.start=data.start;
     if(typeof data.start2==='string') state.start2=data.start2;
-    save(); bkDraft=''; open={}; viewCycle=cycleOfToday(); drawerStatus='Progression restaurée.'; render(); return;
+    save(); bkDraft=''; open={}; viewCycle=cycleOfToday(); statusText='Progression restaurée.'; render(); return;
   }
   if(id==='reset'){
-    if(!armed){ armed=true; render(); setTimeout(function(){ if(armed){ armed=false; if(drawerOpen) render(); } },4000); return; }
-    armed=false; state={done:{}, vma:null}; save(); open={}; viewCycle=1; drawerStatus='Tout a été remis à zéro.'; render(); return;
+    if(!armed){ armed=true; render(); setTimeout(function(){ if(armed){ armed=false; if(view==='reset') render(); } },4000); return; }
+    armed=false; state={done:{}, vma:null}; save(); open={}; viewCycle=1; statusText='Tout a été remis à zéro.'; render(); return;
   }
 });
 
