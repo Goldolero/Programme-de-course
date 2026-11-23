@@ -101,6 +101,16 @@ h1{font:800 clamp(52px,16vw,88px)/.88 "Barlow Condensed","Arial Narrow",sans-ser
 .today{box-shadow:inset 3px 0 0 var(--tempo)}
 .vma{display:flex;gap:8px;align-items:center;margin:4px 0 12px;flex-wrap:wrap}
 .vma input{width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.seg{display:flex;gap:6px}
+.seg button{min-width:52px;padding:8px 14px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:600 15px Barlow,sans-serif;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.acts button{padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);font:600 13px Barlow,sans-serif;cursor:pointer}
+.acts .note{font-size:12.5px;color:var(--tempo)}
+.session.late .day{color:var(--fast)}
+.late-box{background:var(--paper);border:1px solid var(--fast);border-left-width:4px;border-radius:10px;padding:12px 14px;margin:0 0 22px}
+.late-box p{margin:0 0 10px;font-size:14.5px}
+.late-box button{padding:8px 14px;border:0;border-radius:6px;background:var(--accent);color:var(--paper);font:600 14px Barlow,sans-serif;cursor:pointer}
 .rules{margin-top:40px;font-size:14.5px;color:var(--muted)}
 .rules h2{font:800 26px/1 "Barlow Condensed",sans-serif;color:var(--ink);margin:0 0 10px}
 .rules p{margin:0 0 8px}
@@ -301,7 +311,34 @@ function today(){ return parseD(isoD(new Date())); }
 function daysBetween(a,b){ return Math.round((b-a)/86400000); }
 function toMonday(d){ var dow=d.getDay(); return dow===1?d:addD(d,(8-dow)%7); }
 function startR(){ return parseD(state.start); }
-function startC(){ var s=parseD(state.start2); if(s) return s; var r=startR(); return r?addD(r,CYCLE_DAYS):null; }
+function mondayAfter(d){ var x=addD(d,1); while(x.getDay()!==1) x=addD(x,1); return x; }
+function modeAt(d){ var m=3, iso=isoD(d); (state.freq||[]).forEach(function(f){ if(f.from<=iso) m=f.n; }); return m; }
+function allowedDay(d,two){ var g=d.getDay(); if(two||modeAt(d)===2) return g===1||g===5; return g===1||g===3||g===5; }
+function nextAllowed(d,two){ var x=addD(d,1); while(!allowedDay(x,two)) x=addD(x,1); return x; }
+function saturdayOf(d){ return addD(d,(6-d.getDay()+7)%7); }
+function dayName(d){ var n=d.toLocaleDateString('fr-FR',{weekday:'long'}); return n.charAt(0).toUpperCase()+n.slice(1); }
+function shiftOf(id){ var n=state.shift&&state.shift[id]; return n>0?n:0; }
+var SCHED={};
+function startC(){ var s=parseD(state.start2); if(s) return s; var r=sched(PROG.r,1); return r?mondayAfter(r.last):null; }
+// Planning réel : les séances s'enchaînent dans l'ordre sur les jours de course
+// (lundi, mercredi, vendredi en mode 3 séances ; lundi et vendredi en mode 2).
+// Une séance ratée saute un jour de course : elle et toutes les suivantes sont décalées.
+function sched(P,cy){
+  var key=P.key+cy; if(key in SCHED) return SCHED[key];
+  SCHED[key]=null;
+  var base=P.base(cy), out=null;
+  if(base){
+    var ids=[], wk=[], names=[], two=[];
+    P.weeks.forEach(function(w){ w.s.forEach(function(s,i){ ids.push(P.sid(cy,w.num,i)); wk.push(w.num); names.push(s.n); two.push(w.s.length===2); }); });
+    var dates={}, prev=addD(base,-1), cum=0;
+    ids.forEach(function(id,k){ var d=prev, n=shiftOf(id); cum+=n; for(var j=0;j<=n;j++) d=nextAllowed(d,two[k]); dates[id]=d; prev=d; });
+    out={ids:ids, wk:wk, names:names, dates:dates, last:dates[ids[ids.length-1]], shift:cum};
+  }
+  SCHED[key]=out; return out;
+}
+function weekLast(P,cy,w){ var s=sched(P,cy); if(!s) return null; var d=null; s.ids.forEach(function(id,k){ if(s.wk[k]===w) d=s.dates[id]; }); return d; }
+function weekFirst(P,cy,w){ var s=sched(P,cy); if(!s) return null; for(var k=0;k<s.ids.length;k++){ if(s.wk[k]===w) return s.dates[s.ids[k]]; } return null; }
+function overdue(P,cy){ var s=sched(P,cy); if(!s) return []; var t=today(); return s.ids.filter(function(id){ return !state.done[id] && s.dates[id]<t; }); }
 
 // ---------- Programmes ----------
 var PROG = {
@@ -310,22 +347,21 @@ var PROG = {
       base:function(cy){ return startR(); } },
   c:{ key:'c', phases:CONT, weeks:WEEKS_C,
       sid:function(cy,w,i){ return 'c'+cy+'-s'+w+'-'+(i+1); }, mid:function(cy,w){ return 'c'+cy+'-m'+w; },
-      base:function(cy){ var s=startC(); return s?addD(s,(cy-1)*CYCLE_DAYS):null; } }
+      base:function(cy){ if(cy<=1) return startC(); var p=sched(PROG.c,cy-1); return p?mondayAfter(p.last):null; } }
 };
 function runIds(P,cy){ var o=[]; P.weeks.forEach(function(w){ w.s.forEach(function(_,i){ o.push(P.sid(cy,w.num,i)); }); }); return o; }
 function complete(P,cy){ return runIds(P,cy).every(function(id){ return state.done[id]; }); }
 function firstOpenWeek(P,cy){ for(var k=0;k<P.weeks.length;k++){ var w=P.weeks[k]; if(w.s.some(function(_,i){ return !state.done[P.sid(cy,w.num,i)]; })) return w.num; } return null; }
-function weekOfToday(P,cy){ var b=P.base(cy); if(!b) return null; var diff=daysBetween(b,today()); if(diff<0) return 1; var w=Math.floor(diff/7)+1; return w>12?null:w; }
-function cycleOfToday(){ var s=startC(); if(s){ var diff=daysBetween(s,today()); return diff<0?1:Math.floor(diff/CYCLE_DAYS)+1; } var cy=1; while(complete(PROG.c,cy)) cy++; return cy; }
-function sessDate(P,cy,w,day){ var b=P.base(cy); return b?addD(b,(w-1)*7+OFF[day]):null; }
+function weekOfToday(P,cy){ var s=sched(P,cy); if(!s) return null; var t=today(); for(var k=0;k<s.ids.length;k++){ if(s.dates[s.ids[k]]>=t) return s.wk[k]; } return null; }
+function cycleOfToday(){ if(startC()){ var cy=1, t=today(); while(cy<300){ var nb=PROG.c.base(cy+1); if(!nb||nb>t) break; cy++; } return cy; } var c=1; while(complete(PROG.c,c)) c++; return c; }
 
 // ---------- Vue ----------
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 var tab = lsGet(LS_KEY+'-tab');
 if(tab!=='r' && tab!=='c'){
-  var r=startR();
-  tab = (complete(PROG.r,1) || (r && daysBetween(r,today())>=CYCLE_DAYS)) ? 'c' : 'r';
+  var sr=sched(PROG.r,1);
+  tab = (complete(PROG.r,1) || (sr && today()>saturdayOf(sr.last))) ? 'c' : 'r';
 }
 var viewCycle = cycleOfToday();
 var open = {};
@@ -336,7 +372,8 @@ var NAMES={r:'Reprise',c:'Continuité',save:'Sauvegarde',reset:'Remise à zéro'
 function okey(P,cy,w){ return P.key==='r' ? 'r'+w : 'c'+cy+'-'+w; }
 function ensureOpen(P,cy){
   for(var k in open){ if(open[k] && k.indexOf(P.key==='r'?'r':'c'+cy+'-')===0) return; }
-  var w=weekOfToday(P,cy)||firstOpenWeek(P,cy);
+  var od=overdue(P,cy), s=sched(P,cy);
+  var w=(od.length&&s?s.wk[s.ids.indexOf(od[0])]:null)||weekOfToday(P,cy)||firstOpenWeek(P,cy);
   if(w) open[okey(P,cy,w)]=true;
 }
 
@@ -356,31 +393,34 @@ function hint(s){
 function strip(g){ var tot=mins(g); return g.map(function(s){ return '<span style="flex:'+(s[1]/tot)+' 0 0;height:'+(H[s[0]]*100)+'%;background:var(--'+s[0]+')"></span>'; }).join(''); }
 function doneLabel(d){ return d ? 'Faite le '+fmtD(parseD(d)) : ''; }
 
-function sessionHtml(id, dayLabel, isToday, title, detail, g, extra, muscu, mm){
+function sessionHtml(id, dayLabel, isToday, title, detail, g, extra, muscu, mm, acts, late){
   var d=state.done[id];
-  var h='<div class="session'+(muscu?' muscu':'')+(d?' done':'')+(isToday?' today':'')+'"><button class="check" data-id="'+id+'" aria-pressed="'+(!!d)+'" aria-label="'+(d?'Marquer comme non faite':'Marquer comme faite')+' : '+esc(title)+'">✓</button><div class="sbody"><span class="day">'+dayLabel+'</span><p class="stitle">'+title+'</p><p class="sdetail">'+esc(detail)+'</p>'+extra;
+  var h='<div class="session'+(muscu?' muscu':'')+(d?' done':'')+(isToday?' today':'')+(late&&!d?' late':'')+'"><button class="check" data-id="'+id+'" aria-pressed="'+(!!d)+'" aria-label="'+(d?'Marquer comme non faite':'Marquer comme faite')+' : '+esc(title)+'">✓</button><div class="sbody"><span class="day">'+dayLabel+'</span><p class="stitle">'+title+'</p><p class="sdetail">'+esc(detail)+'</p>'+extra;
   h+=muscu?'<div class="musclebar" aria-hidden="true"></div>':'<div class="strip" aria-hidden="true">'+strip(g)+'</div>';
-  h+='<div class="smeta"><span>'+Math.round(muscu?mm:mins(g))+' min</span><span>'+doneLabel(d)+'</span></div></div></div>';
+  h+='<div class="smeta"><span>'+Math.round(muscu?mm:mins(g))+' min</span><span>'+doneLabel(d)+'</span></div>'+(acts||'')+'</div></div>';
   return h;
 }
 
 function programHtml(P,cy){
-  var h='', base=P.base(cy), tIso=isoD(today());
+  var h='', sc=sched(P,cy), t=today(), tIso=isoD(t);
   P.phases.forEach(function(ph){
     h+='<section class="phase"><h2>'+esc(ph.name)+'</h2><p>'+esc(ph.note)+'</p></section>';
     ph.weeks.forEach(function(w){
       var ids=w.s.map(function(_,i){ return P.sid(cy,w.num,i); });
       var nd=ids.filter(function(id){ return state.done[id]; }).length;
       var k=okey(P,cy,w.num), isOpen=!!open[k];
-      var range=base?' · '+fmtD(addD(base,(w.num-1)*7))+' – '+fmtD(addD(base,(w.num-1)*7+5)):'';
+      var wf=weekFirst(P,cy,w.num), wl=weekLast(P,cy,w.num), msd=wl?saturdayOf(wl):null;
+      var range=wf?' · '+fmtD(wf)+' – '+fmtD(msd):'';
       h+='<div class="week'+(isOpen?' open':'')+(nd===ids.length?' complete':'')+'"><button class="week-head" data-week="'+k+'" aria-expanded="'+isOpen+'"><span class="wnum">'+w.num+'</span><span class="wtitle">Semaine '+w.num+'<small>'+esc(w.t)+range+'</small></span><span class="wprog">'+nd+'/'+ids.length+'</span><span class="chev" aria-hidden="true">›</span></button><div class="sessions">';
       w.s.forEach(function(s,i){
-        var sd=sessDate(P,cy,w.num,w.days[i]);
+        var sd=sc?sc.dates[ids[i]]:null, late=sd&&sd<t, n=shiftOf(ids[i]), acts='';
+        if(sc && !state.done[ids[i]]) acts='<button data-miss="'+ids[i]+'">Séance ratée</button>';
+        if(n) acts+='<span class="note">Reportée</span><button data-unmiss="'+ids[i]+'">Annuler le report</button>';
+        if(acts) acts='<div class="acts">'+acts+'</div>';
         var extra=''; var hi=hint(s); if(hi) extra+='<p class="hint">'+esc(hi)+'</p>';
         if(s.test) extra+='<div class="vma"><label for="vma-in">Ta VMA (km/h)</label><input id="vma-in" type="number" inputmode="decimal" step="0.1" min="6" max="25" value="'+(state.vma||'')+'"><button id="vma-save">Enregistrer</button></div>';
-        h+=sessionHtml(ids[i], w.days[i]+(sd?' '+fmtD(sd):''), sd&&isoD(sd)===tIso, esc(s.n), s.d, s.g, extra, false);
+        h+=sessionHtml(ids[i], (sd?dayName(sd)+' '+fmtD(sd)+(late&&!state.done[ids[i]]?' · en retard':''):w.days[i]), sd&&isoD(sd)===tIso, esc(s.n), s.d, s.g, extra, false, 0, acts, late);
       });
-      var msd=sessDate(P,cy,w.num,'Samedi');
       h+=sessionHtml(P.mid(cy,w.num), 'Samedi'+(msd?' '+fmtD(msd):''), msd&&isoD(msd)===tIso, 'Musculation <span class="opt">(facultatif)</span>', w.m.d, null, '', true, w.m.mm);
       h+='</div></div>';
     });
@@ -402,20 +442,24 @@ function programView(){
   var h='';
   if(tab==='r'){
     var st=startR();
-    h+='<h1>Reprise</h1><p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1), musculation facultative le samedi.</p>';
-    h+='<div class="start"><label for="start-in">Date de début de la reprise</label><input id="start-in" type="date" value="'+(state.start||'')+'"><button id="start-save" data-which="start">Valider</button>'+(st?'<p>Semaine 1 : lundi '+fmtL(st)+'. Fin de la reprise : samedi '+fmtL(addD(st,11*7+5))+'.</p>':'<p>Choisis un lundi : toutes les séances seront datées automatiquement.</p>')+'</div>';
+    h+='<h1>Reprise</h1><p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1 ou en mode 2 séances), musculation facultative le samedi.</p>';
+    h+='<div class="start"><label for="start-in">Date de début de la reprise</label><input id="start-in" type="date" value="'+(state.start||'')+'"><button id="start-save" data-which="start">Valider</button>'+(st?'<p>Semaine 1 : lundi '+fmtL(st)+'. Fin de la reprise : samedi '+fmtL(saturdayOf(sched(P,1).last))+(sched(P,1).shift?' (planning décalé de '+sched(P,1).shift+' séance'+(sched(P,1).shift>1?'s':'')+')':'')+'.</p>':'<p>Choisis un lundi : toutes les séances seront datées automatiquement.</p>')+'</div>';
   } else {
-    var sc=startC(), b=P.base(cy);
+    var sc=startC(), b=P.base(cy), scy=sched(P,cy);
     h+='<h1>Continuité</h1><p class="lede">Un cycle de douze semaines à répéter sans fin, pour garder le rythme après la reprise : trois blocs de quatre semaines, chacun terminé par une semaine allégée, et un test VMA pour recaler tes allures à chaque cycle.</p>';
-    h+='<div class="start"><label for="start2-in">Début de la continuité</label><input id="start2-in" type="date" value="'+(sc?isoD(sc):'')+'"><button id="start-save" data-which="start2">Valider</button><p>'+(state.start2?'Date choisie manuellement.':(sc?'Par défaut, la continuité démarre le lundi qui suit la fin de la reprise.':'Elle démarre automatiquement après la reprise si tu as daté celle-ci, ou choisis une date ici.'))+'</p></div>';
-    h+='<div class="cycnav"><button id="cyc-prev" aria-label="Cycle précédent"'+(cy<=1?' disabled':'')+'>‹</button><div><strong>Cycle '+cy+'</strong><span>'+(b?'Du lundi '+fmtL(b)+' au samedi '+fmtL(addD(b,11*7+5)):'Les cycles s’enchaînent indéfiniment')+(cy===cycleOfToday()?' · en cours':'')+'</span></div><button id="cyc-next" aria-label="Cycle suivant"'+(cy>=cycleOfToday()+1?' disabled':'')+'>›</button></div>';
+    h+='<div class="start"><label for="start2-in">Début de la continuité</label><input id="start2-in" type="date" value="'+(sc?isoD(sc):'')+'"><button id="start-save" data-which="start2">Valider</button><p>'+(state.start2?'Date choisie manuellement.':(sc?'Par défaut, la continuité démarre le lundi qui suit la fin de la reprise, et suit ses reports.':'Elle démarre automatiquement après la reprise si tu as daté celle-ci, ou choisis une date ici.'))+'</p></div>';
+    h+='<div class="cycnav"><button id="cyc-prev" aria-label="Cycle précédent"'+(cy<=1?' disabled':'')+'>‹</button><div><strong>Cycle '+cy+'</strong><span>'+(b?'Du lundi '+fmtL(b)+' au samedi '+fmtL(saturdayOf(scy.last)):'Les cycles s’enchaînent indéfiniment')+(cy===cycleOfToday()&&b&&b<=today()?' · en cours':'')+'</span></div><button id="cyc-next" aria-label="Cycle suivant"'+(cy>=cycleOfToday()+1?' disabled':'')+'>›</button></div>';
   }
+  var fm=modeAt(today());
+  h+='<div class="start"><label>Séances de course par semaine</label><div class="seg" role="group" aria-label="Séances par semaine"><button data-freq="2" aria-pressed="'+(fm===2)+'">2</button><button data-freq="3" aria-pressed="'+(fm===3)+'">3</button></div><p>'+(fm===2?'Lundi et vendredi. Aucune séance n’est supprimée : le programme s’étale simplement sur plus de semaines.':'Lundi, mercredi et vendredi. La phase 1 de la reprise reste à 2 séances.')+' Le changement s’applique à partir d’aujourd’hui, aux deux programmes.</p></div>';
   h+=progressHtml(P,cy);
   h+='<p class="status" role="status">'+esc(statusText)+'</p>';
+  var od=overdue(P,cy);
+  if(od.length) h+='<div class="late-box"><p><strong>'+od.length+' séance'+(od.length>1?'s passées non cochées':' passée non cochée')+'.</strong> Coche celles que tu as faites. Pour les autres, décale le planning : la première séance manquée est reportée à la prochaine séance possible, et tout le reste suit.</p><button id="catchup">Reporter à partir d’aujourd’hui</button></div>';
   h+='<div class="legend"><span><i style="background:var(--walk)"></i>Marche</span><span><i style="background:var(--jog)"></i>Trot de récup</span><span><i style="background:var(--easy)"></i>Facile</span><span><i style="background:var(--tempo)"></i>Soutenu</span><span><i style="background:var(--fast)"></i>Rapide</span></div>';
   h+=programHtml(P,cy);
   h+='<section class="rules"><h2>Pour ne pas te blesser</h2>';
-  h+='<p>Le mardi, le jeudi et le dimanche sont des jours de repos. Si tu dois décaler une séance, garde au moins un jour sans course entre deux séances, et jamais deux séances intenses à la suite.</p>';
+  h+='<p>Les jours sans course sont des jours de repos. Si tu rates une séance, appuie sur « Séance ratée » : elle est reportée au prochain jour de course et tout le planning suit, sans sauter de séance.</p>';
   h+='<p>Si tes jambes sont encore lourdes le lundi après la musculation du samedi, allège la séance du lundi plutôt que de forcer.</p>';
   h+='<p>Garde environ 80 % de ton temps de course en facile.</p>';
   h+='<p>Une gêne qui dure plus de 48 h ou qui s’aggrave en courant : lève le pied ou refais la semaine. Surveille surtout les tendons d’Achille et les tibias.</p>';
@@ -440,6 +484,7 @@ function resetView(){
 }
 function menuItem(v,label,sub){ return '<li><button data-view="'+v+'"'+(view===v?' aria-current="page"':'')+'>'+label+(sub?'<small>'+sub+'</small>':'')+'</button></li>'; }
 function render(){
+  SCHED={};
   var h='<div class="wrap"><header class="bar"><button class="menubtn" id="menu-open" aria-label="Ouvrir le menu" aria-expanded="'+menuOpen+'" aria-controls="menu"><span></span><span></span><span></span></button><div class="brand">'+RUNNER+'<div><b>Programme course</b><small>'+NAMES[view]+'</small></div></div></header>';
   h+= view==='save' ? saveView() : view==='reset' ? resetView() : programView();
   h+='</div>';
@@ -452,7 +497,7 @@ function render(){
   document.body.classList.toggle('lock', menuOpen);
 }
 
-function save(){ lsSet(LS_KEY, JSON.stringify(state)); }
+function save(){ SCHED={}; lsSet(LS_KEY, JSON.stringify(state)); }
 function setMenu(v){ menuOpen=v; render(); var el=document.getElementById(v?'menu-close':'menu-open'); if(el) el.focus(); }
 
 // ---------- Actions ----------
@@ -468,6 +513,40 @@ document.addEventListener('click', function(e){
   if(wb){ var k=wb.getAttribute('data-week'); open[k]=!open[k]; render(); return; }
   var cb=t.closest('.check');
   if(cb){ var sid=cb.getAttribute('data-id'); if(state.done[sid]) delete state.done[sid]; else state.done[sid]=isoD(new Date()); save(); statusText=''; render(); return; }
+  var mb2=t.closest('[data-miss]'), ub=t.closest('[data-unmiss]');
+  if(mb2 || ub){
+    var sid2=(mb2||ub).getAttribute(mb2?'data-miss':'data-unmiss');
+    if(!state.shift) state.shift={};
+    if(mb2) state.shift[sid2]=shiftOf(sid2)+1; else delete state.shift[sid2];
+    save();
+    var Pq=PROG[tab], cq=tab==='c'?viewCycle:1, sq=sched(Pq,cq), nd=sq&&sq.dates[sid2];
+    statusText = nd ? (mb2?'Séance reportée au ':'Report annulé : séance prévue le ')+dayName(nd).toLowerCase()+' '+fmtL(nd)+'. Tout le planning qui suit est décalé.' : '';
+    render(); return;
+  }
+  var fb=t.closest('[data-freq]');
+  if(fb){
+    var fn=+fb.getAttribute('data-freq'), td=isoD(today());
+    state.freq=(state.freq||[]).filter(function(f){ return f.from<td; });
+    if(modeAt(today())!==fn) state.freq.push({from:td,n:fn});
+    if(!state.freq.length) delete state.freq;
+    save(); open={};
+    statusText = fn===2 ? 'Passage à 2 séances par semaine (lundi et vendredi) à partir d’aujourd’hui. Les dates ont été recalculées.' : 'Passage à 3 séances par semaine (lundi, mercredi, vendredi) à partir d’aujourd’hui. Les dates ont été recalculées.';
+    if(tab==='c') viewCycle=cycleOfToday();
+    render(); return;
+  }
+  if(id==='catchup'){
+    var Pc=PROG[tab], cc=tab==='c'?viewCycle:1, s3=sched(Pc,cc), od3=overdue(Pc,cc);
+    if(s3 && od3.length){
+      var first=od3[0], tt=today(), guard=0;
+      if(!state.shift) state.shift={};
+      while(guard++<400){ SCHED={}; if(sched(Pc,cc).dates[first]>=tt) break; state.shift[first]=shiftOf(first)+1; }
+      save();
+      var s4=sched(Pc,cc), d4=s4.dates[first];
+      statusText='Planning décalé : « '+s4.names[s4.ids.indexOf(first)]+' » est maintenant prévue le '+dayName(d4).toLowerCase()+' '+fmtL(d4)+', et tout le reste suit.';
+      open={};
+    }
+    render(); return;
+  }
   if(id==='cyc-prev' && viewCycle>1){ viewCycle--; render(); return; }
   if(id==='cyc-next' && viewCycle<cycleOfToday()+1){ viewCycle++; render(); return; }
   if(id==='start-save'){
@@ -494,6 +573,8 @@ document.addEventListener('click', function(e){
     state={done:data.done, vma:typeof data.vma==='number'?data.vma:null};
     if(typeof data.start==='string') state.start=data.start;
     if(typeof data.start2==='string') state.start2=data.start2;
+    if(data.shift && typeof data.shift==='object') state.shift=data.shift;
+    if(Array.isArray(data.freq)) state.freq=data.freq;
     save(); bkDraft=''; open={}; viewCycle=cycleOfToday(); statusText='Progression restaurée.'; render(); return;
   }
   if(id==='reset'){
