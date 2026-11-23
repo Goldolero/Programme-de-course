@@ -329,15 +329,29 @@ function sched(P,cy){
   var base=P.base(cy), out=null;
   if(base){
     var ids=[], wk=[], names=[], two=[];
-    P.weeks.forEach(function(w){ w.s.forEach(function(s,i){ ids.push(P.sid(cy,w.num,i)); wk.push(w.num); names.push(s.n); two.push(w.s.length===2); }); });
+    var si=[];
+    P.weeks.forEach(function(w){ w.s.forEach(function(s,i){ ids.push(P.sid(cy,w.num,i)); wk.push(w.num); si.push(i); names.push(s.n); two.push(w.s.length===2); }); });
     var dates={}, prev=addD(base,-1), cum=0;
     ids.forEach(function(id,k){ var d=prev, n=shiftOf(id); cum+=n; for(var j=0;j<=n;j++) d=nextAllowed(d,two[k]); dates[id]=d; prev=d; });
-    out={ids:ids, wk:wk, names:names, dates:dates, last:dates[ids[ids.length-1]], shift:cum};
+    out={ids:ids, wk:wk, si:si, names:names, dates:dates, last:dates[ids[ids.length-1]], shift:cum};
   }
   SCHED[key]=out; return out;
 }
 function weekLast(P,cy,w){ var s=sched(P,cy); if(!s) return null; var d=null; s.ids.forEach(function(id,k){ if(s.wk[k]===w) d=s.dates[id]; }); return d; }
 function weekFirst(P,cy,w){ var s=sched(P,cy); if(!s) return null; for(var k=0;k<s.ids.length;k++){ if(s.wk[k]===w) return s.dates[s.ids[k]]; } return null; }
+function phaseOf(P,w){ var n=0; for(var i=0;i<P.phases.length;i++){ n+=P.phases[i].weeks.length; if(w<=n) return i; } return P.phases.length-1; }
+// Affichage par vraies semaines du calendrier (lundi → dimanche), quel que soit le mode et les reports.
+function cards(P,cy){
+  var s=sched(P,cy); if(!s) return null;
+  var base=P.base(cy), out=[], cur=null, last=-1;
+  s.ids.forEach(function(id,k){
+    var d=s.dates[id], ci=Math.floor(daysBetween(base,d)/7);
+    if(!cur || ci!==last){ cur={ses:[], mon:addD(base,ci*7)}; out.push(cur); last=ci; }
+    cur.ses.push({id:id, w:s.wk[k], i:s.si[k], d:d});
+  });
+  out.forEach(function(c,n){ c.n=n+1; c.sat=addD(c.mon,5); });
+  return out;
+}
 function overdue(P,cy){ var s=sched(P,cy); if(!s) return []; var t=today(); return s.ids.filter(function(id){ return !state.done[id] && s.dates[id]<t; }); }
 
 // ---------- Programmes ----------
@@ -372,9 +386,13 @@ var NAMES={r:'Reprise',c:'Continuité',save:'Sauvegarde',reset:'Remise à zéro'
 function okey(P,cy,w){ return P.key==='r' ? 'r'+w : 'c'+cy+'-'+w; }
 function ensureOpen(P,cy){
   for(var k in open){ if(open[k] && k.indexOf(P.key==='r'?'r':'c'+cy+'-')===0) return; }
-  var od=overdue(P,cy), s=sched(P,cy);
-  var w=(od.length&&s?s.wk[s.ids.indexOf(od[0])]:null)||weekOfToday(P,cy)||firstOpenWeek(P,cy);
-  if(w) open[okey(P,cy,w)]=true;
+  var cs=cards(P,cy);
+  if(!cs){ var w=firstOpenWeek(P,cy); if(w) open[okey(P,cy,w)]=true; return; }
+  var od=overdue(P,cy), t=today(), pick=null;
+  if(od.length) pick=cs.filter(function(c){ return c.ses.some(function(x){ return x.id===od[0]; }); })[0];
+  if(!pick) pick=cs.filter(function(c){ return c.ses.some(function(x){ return x.d>=t; }); })[0];
+  if(!pick) pick=cs.filter(function(c){ return c.ses.some(function(x){ return !state.done[x.id]; }); })[0];
+  if(pick) open[okey(P,cy,pick.n)]=true;
 }
 
 // ---------- Rendu ----------
@@ -401,8 +419,33 @@ function sessionHtml(id, dayLabel, isToday, title, detail, g, extra, muscu, mm, 
   return h;
 }
 
+function sessionBlock(P,cy,w,s,i,sd,t){
+  var id=P.sid(cy,w.num,i), late=sd&&sd<t, acts='';
+  if(sd && !state.done[id]) acts='<button data-miss="'+id+'">Séance ratée</button>';
+  if(shiftOf(id)) acts+='<span class="note">Reportée</span><button data-unmiss="'+id+'">Annuler le report</button>';
+  if(acts) acts='<div class="acts">'+acts+'</div>';
+  var extra=''; var hi=hint(s); if(hi) extra+='<p class="hint">'+esc(hi)+'</p>';
+  if(s.test) extra+='<div class="vma"><label for="vma-in">Ta VMA (km/h)</label><input id="vma-in" type="number" inputmode="decimal" step="0.1" min="6" max="25" value="'+(state.vma||'')+'"><button id="vma-save">Enregistrer</button></div>';
+  return sessionHtml(id, (sd?dayName(sd)+' '+fmtD(sd)+(late&&!state.done[id]?' · en retard':''):w.days[i]), sd&&isoD(sd)===isoD(t), esc(s.n), s.d, s.g, extra, false, 0, acts, late);
+}
 function programHtml(P,cy){
-  var h='', sc=sched(P,cy), t=today(), tIso=isoD(t);
+  var cs=cards(P,cy);
+  if(cs){
+    var h='', t=today(), shown=-1;
+    cs.forEach(function(c){
+      c.ses.forEach(function(x){ var ph=phaseOf(P,x.w); while(shown<ph){ shown++; h+='<section class="phase"><h2>'+esc(P.phases[shown].name)+'</h2><p>'+esc(P.phases[shown].note)+'</p></section>'; } });
+      var titles=[]; c.ses.forEach(function(x){ var tt=P.weeks[x.w-1].t; if(titles.indexOf(tt)<0) titles.push(tt); });
+      var nd=c.ses.filter(function(x){ return state.done[x.id]; }).length;
+      var k=okey(P,cy,c.n), isOpen=!!open[k];
+      h+='<div class="week'+(isOpen?' open':'')+(nd===c.ses.length?' complete':'')+'"><button class="week-head" data-week="'+k+'" aria-expanded="'+isOpen+'"><span class="wnum">'+c.n+'</span><span class="wtitle">Semaine '+c.n+'<small>'+esc(titles.join(' / '))+' · '+fmtD(c.mon)+' – '+fmtD(c.sat)+'</small></span><span class="wprog">'+nd+'/'+c.ses.length+'</span><span class="chev" aria-hidden="true">›</span></button><div class="sessions">';
+      c.ses.forEach(function(x){ var w=P.weeks[x.w-1]; h+=sessionBlock(P,cy,w,w.s[x.i],x.i,x.d,t); });
+      var lw=P.weeks[c.ses[c.ses.length-1].w-1];
+      h+=sessionHtml(P.mid(cy,c.n), 'Samedi '+fmtD(c.sat), isoD(c.sat)===isoD(t), 'Musculation <span class="opt">(facultatif)</span>', lw.m.d, null, '', true, lw.m.mm);
+      h+='</div></div>';
+    });
+    return h;
+  }
+  var h='', sc=null, t=today(), tIso=isoD(t);
   P.phases.forEach(function(ph){
     h+='<section class="phase"><h2>'+esc(ph.name)+'</h2><p>'+esc(ph.note)+'</p></section>';
     ph.weeks.forEach(function(w){
@@ -430,7 +473,9 @@ function programHtml(P,cy){
 
 function progressHtml(P,cy){
   var ids=runIds(P,cy), n=ids.filter(function(id){ return state.done[id]; }).length, m=0;
-  P.weeks.forEach(function(w){ if(state.done[P.mid(cy,w.num)]) m++; });
+  var cs=cards(P,cy);
+  if(cs) cs.forEach(function(c){ if(state.done[P.mid(cy,c.n)]) m++; });
+  else P.weeks.forEach(function(w){ if(state.done[P.mid(cy,w.num)]) m++; });
   var h='<div class="ticks" aria-hidden="true">'+ids.map(function(id){ return '<span class="'+(state.done[id]?'on':'')+'"></span>'; }).join('')+'</div>';
   h+='<p class="count">'+n+' séance'+(n>1?'s':'')+' de course faite'+(n>1?'s':'')+' sur '+ids.length+(m?', '+m+' de musculation':'')+'</p>';
   return h;
@@ -451,7 +496,7 @@ function programView(){
     h+='<div class="cycnav"><button id="cyc-prev" aria-label="Cycle précédent"'+(cy<=1?' disabled':'')+'>‹</button><div><strong>Cycle '+cy+'</strong><span>'+(b?'Du lundi '+fmtL(b)+' au samedi '+fmtL(saturdayOf(scy.last)):'Les cycles s’enchaînent indéfiniment')+(cy===cycleOfToday()&&b&&b<=today()?' · en cours':'')+'</span></div><button id="cyc-next" aria-label="Cycle suivant"'+(cy>=cycleOfToday()+1?' disabled':'')+'>›</button></div>';
   }
   var fm=modeAt(today());
-  h+='<div class="start"><label>Séances de course par semaine</label><div class="seg" role="group" aria-label="Séances par semaine"><button data-freq="2" aria-pressed="'+(fm===2)+'">2</button><button data-freq="3" aria-pressed="'+(fm===3)+'">3</button></div><p>'+(fm===2?'Mardi et jeudi. Aucune séance n’est supprimée : le programme s’étale simplement sur plus de semaines.':'Lundi, mercredi et vendredi. La phase 1 de la reprise reste à 2 séances.')+' Le changement s’applique à partir d’aujourd’hui, aux deux programmes.</p></div>';
+  h+='<div class="start"><label>Séances de course par semaine</label><div class="seg" role="group" aria-label="Séances par semaine"><button data-freq="2" aria-pressed="'+(fm===2)+'">2</button><button data-freq="3" aria-pressed="'+(fm===3)+'">3</button></div><p>'+(fm===2?'Mardi et jeudi. Aucune séance n’est supprimée : chaque semaine compte 2 séances et le programme s’étale sur plus de semaines.':'Lundi, mercredi et vendredi. La phase 1 de la reprise reste à 2 séances.')+' Le changement s’applique à partir d’aujourd’hui, aux deux programmes.</p></div>';
   h+=progressHtml(P,cy);
   h+='<p class="status" role="status">'+esc(statusText)+'</p>';
   var od=overdue(P,cy);
