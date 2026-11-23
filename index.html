@@ -313,7 +313,7 @@ function toMonday(d){ var dow=d.getDay(); return dow===1?d:addD(d,(8-dow)%7); }
 function startR(){ return parseD(state.start); }
 function mondayAfter(d){ var x=addD(d,1); while(x.getDay()!==1) x=addD(x,1); return x; }
 function modeAt(d){ var m=3, iso=isoD(d); (state.freq||[]).forEach(function(f){ if(f.from<=iso) m=f.n; }); return m; }
-function allowedDay(d,two){ var g=d.getDay(); if(two||modeAt(d)===2) return g===1||g===5; return g===1||g===3||g===5; }
+function allowedDay(d,two){ var g=d.getDay(); if(modeAt(d)===2) return g===2||g===4; if(two) return g===1||g===5; return g===1||g===3||g===5; }
 function nextAllowed(d,two){ var x=addD(d,1); while(!allowedDay(x,two)) x=addD(x,1); return x; }
 function saturdayOf(d){ return addD(d,(6-d.getDay()+7)%7); }
 function dayName(d){ var n=d.toLocaleDateString('fr-FR',{weekday:'long'}); return n.charAt(0).toUpperCase()+n.slice(1); }
@@ -321,7 +321,7 @@ function shiftOf(id){ var n=state.shift&&state.shift[id]; return n>0?n:0; }
 var SCHED={};
 function startC(){ var s=parseD(state.start2); if(s) return s; var r=sched(PROG.r,1); return r?mondayAfter(r.last):null; }
 // Planning réel : les séances s'enchaînent dans l'ordre sur les jours de course
-// (lundi, mercredi, vendredi en mode 3 séances ; lundi et vendredi en mode 2).
+// (lundi, mercredi, vendredi en mode 3 séances, lundi et vendredi en phase 1 ; mardi et jeudi en mode 2).
 // Une séance ratée saute un jour de course : elle et toutes les suivantes sont décalées.
 function sched(P,cy){
   var key=P.key+cy; if(key in SCHED) return SCHED[key];
@@ -442,7 +442,7 @@ function programView(){
   var h='';
   if(tab==='r'){
     var st=startR();
-    h+='<h1>Reprise</h1><p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1 ou en mode 2 séances), musculation facultative le samedi.</p>';
+    h+='<h1>Reprise</h1><p class="lede">Douze semaines pour revenir à la course après un an d’arrêt. Course le lundi, le mercredi et le vendredi (lundi et vendredi en phase 1, mardi et jeudi en mode 2 séances), musculation facultative le samedi.</p>';
     h+='<div class="start"><label for="start-in">Date de début de la reprise</label><input id="start-in" type="date" value="'+(state.start||'')+'"><button id="start-save" data-which="start">Valider</button>'+(st?'<p>Semaine 1 : lundi '+fmtL(st)+'. Fin de la reprise : samedi '+fmtL(saturdayOf(sched(P,1).last))+(sched(P,1).shift?' (planning décalé de '+sched(P,1).shift+' séance'+(sched(P,1).shift>1?'s':'')+')':'')+'.</p>':'<p>Choisis un lundi : toutes les séances seront datées automatiquement.</p>')+'</div>';
   } else {
     var sc=startC(), b=P.base(cy), scy=sched(P,cy);
@@ -451,7 +451,7 @@ function programView(){
     h+='<div class="cycnav"><button id="cyc-prev" aria-label="Cycle précédent"'+(cy<=1?' disabled':'')+'>‹</button><div><strong>Cycle '+cy+'</strong><span>'+(b?'Du lundi '+fmtL(b)+' au samedi '+fmtL(saturdayOf(scy.last)):'Les cycles s’enchaînent indéfiniment')+(cy===cycleOfToday()&&b&&b<=today()?' · en cours':'')+'</span></div><button id="cyc-next" aria-label="Cycle suivant"'+(cy>=cycleOfToday()+1?' disabled':'')+'>›</button></div>';
   }
   var fm=modeAt(today());
-  h+='<div class="start"><label>Séances de course par semaine</label><div class="seg" role="group" aria-label="Séances par semaine"><button data-freq="2" aria-pressed="'+(fm===2)+'">2</button><button data-freq="3" aria-pressed="'+(fm===3)+'">3</button></div><p>'+(fm===2?'Lundi et vendredi. Aucune séance n’est supprimée : le programme s’étale simplement sur plus de semaines.':'Lundi, mercredi et vendredi. La phase 1 de la reprise reste à 2 séances.')+' Le changement s’applique à partir d’aujourd’hui, aux deux programmes.</p></div>';
+  h+='<div class="start"><label>Séances de course par semaine</label><div class="seg" role="group" aria-label="Séances par semaine"><button data-freq="2" aria-pressed="'+(fm===2)+'">2</button><button data-freq="3" aria-pressed="'+(fm===3)+'">3</button></div><p>'+(fm===2?'Mardi et jeudi. Aucune séance n’est supprimée : le programme s’étale simplement sur plus de semaines.':'Lundi, mercredi et vendredi. La phase 1 de la reprise reste à 2 séances.')+' Le changement s’applique à partir d’aujourd’hui, aux deux programmes.</p></div>';
   h+=progressHtml(P,cy);
   h+='<p class="status" role="status">'+esc(statusText)+'</p>';
   var od=overdue(P,cy);
@@ -530,7 +530,7 @@ document.addEventListener('click', function(e){
     if(modeAt(today())!==fn) state.freq.push({from:td,n:fn});
     if(!state.freq.length) delete state.freq;
     save(); open={};
-    statusText = fn===2 ? 'Passage à 2 séances par semaine (lundi et vendredi) à partir d’aujourd’hui. Les dates ont été recalculées.' : 'Passage à 3 séances par semaine (lundi, mercredi, vendredi) à partir d’aujourd’hui. Les dates ont été recalculées.';
+    statusText = fn===2 ? 'Passage à 2 séances par semaine (mardi et jeudi) à partir d’aujourd’hui. Les dates ont été recalculées.' : 'Passage à 3 séances par semaine (lundi, mercredi, vendredi) à partir d’aujourd’hui. Les dates ont été recalculées.';
     if(tab==='c') viewCycle=cycleOfToday();
     render(); return;
   }
